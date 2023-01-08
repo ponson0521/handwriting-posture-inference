@@ -6,7 +6,7 @@ from werkzeug.utils import secure_filename
 from mediapipe_draw import image_draw, video_draw
 from datetime import datetime
 
-
+# flask setup
 app = Flask(__name__)
 app.secret_key = os.urandom(24).hex()
 UPLOAD_FOLDER = './static/storage'
@@ -20,7 +20,7 @@ def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-@app.route('/upload_file', methods=['POST'])
+@app.route('/upload_file', methods=['POST'])    # simple upload function for image
 def upload_file():
     if request.method == 'POST':
         # check if the post request has the file part
@@ -48,11 +48,11 @@ def upload_file():
                 return render_template("uldet.html", filename=filename, extension=extension, prediction=labels[prediction])
     return render_template("upload.html")
 
-@app.route("/medijs")
+@app.route("/medijs")    # main function
 def camera():
     return render_template("medijs.html")
 
-@app.route('/axios', methods=['GET', 'POST'])
+@app.route('/axios', methods=['GET', 'POST'])    # use axios to upload image with results when using main function
 def axios():
     if request.method == 'POST':
         file = request.files['file']
@@ -62,27 +62,27 @@ def axios():
         file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
         return "success"
     
-@app.route("/display/<filename>")
+@app.route("/display/<filename>")    # show the uploaded image for /upload_file
 def display(filename):
     return redirect(url_for('static', filename='storage/'+filename))
 
-@app.route("/")
+@app.route("/")    
 def homepage():
     return render_template("index.html")
 
-@app.route("/upload")
+@app.route("/upload")    # image upload web page 
 def upload():
     return render_template("upload.html")
 
-@app.route("/product")
+@app.route("/product")   
 def product():
     return render_template("product.html")
 
-@app.route('/show_add_user')
+@app.route('/show_add_user')    # a form to record user info
 def show_add_user():
     return render_template("show_add_user.html")
 
-@app.route("/do_add_user", methods=['POST'])
+@app.route("/do_add_user", methods=['POST'])    # post the form
 def do_add_user():
     name = request.form.get("name")
     gender  = request.form.get("gender")
