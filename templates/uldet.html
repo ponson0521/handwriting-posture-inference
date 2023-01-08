@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>護聯網-上傳介面</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css" integrity="sha384-xOolHFLEh07PJGoPkLv1IbcEPTNtaed2xpHsD9ESMhqIYd0nLMwNLD69Npy4HI+N" crossorigin="anonymous">
+  <link rel="shortcut icon" href="/static/image/favicon_io/favicon.ico" >
+</head>
+
+<body>
+  <a href="/"><img src="/static/image/153636.jpg" class="img-fluid w-100" alt="Responsive image" style="height:200px;"></a>
+  <a href="/"><img src="/static/image/160019.jpg" class="mx-auto d-block" style="position:absolute; top:20px; left:20px; height:150px; width:350px;">  </a>
+
+  <nav class="navbar navbar-expand-md bg-warning navbar-light">
+    <!-- Brand -->
+    <a class="navbar-brand font-weight-bold" title="回首頁" href="/">
+      <!-- <img src="/static/image/favicon_io/favicon-32x32.png" width="32" height="32" class="d-inline-block align-top" alt=""> -->
+      <h2 class="font-weight-bolder">首頁</h2>
+    </a>
+    <!-- Toggler/collapsibe Button -->
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#collapsibleNavbar">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <!-- Navbar links -->
+    <div class="collapse navbar-collapse" id="collapsibleNavbar">
+      <div><hr></div>
+      <ul class="navbar-nav">
+        <li class="nav-item">
+          <a class="nav-link" href="/product"><h3 class="font-weight-bolder">商品</h3></a>
+        </li>
+        <div><hr></div>
+        <li class="nav-item">
+          <a class="nav-link active" href="/upload"><h3 class="font-weight-bolder">上傳</h3></a>
+        </li>
+        <div><hr></div>
+        <li class="nav-item">
+          <a class="nav-link" href="/medijs"><h3 class="font-weight-bolder">相機</h3></a>
+        </li>
+      </ul>
+    </div>
+  </nav>
+
+  {% with msg = get_flashed_messages() %}
+    {% if msg %}        <!-- 如果msg變數值不是空的 -->
+      {% for m in msg %}
+        <p>{{ filename }}{{ m }}!</p>  <!-- 顯示快閃訊息 -->
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+  {% if filename %}
+    {% if extension=="mp4" %}
+      <h1>
+        請上傳圖片
+      </h1>
+    {% else %}
+      <div>
+        <img src="{{ url_for('display', filename=filename) }}">
+        {% if prediction %}
+          <h1>{{ prediction }}</h1>
+        {% else %}
+          <h1>無結果</h1>
+        {% endif %}
+      </div>
+    {% endif %}
+  {% endif %}
+  <form method="post" enctype="multipart/form-data" action="{{ url_for('upload_file') }}">
+    <input type="file" name="filename">
+    <input type="submit" value="送出">
+  </form>
+
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.slim.min.js" integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-Fy6S3B9q64WdZWQUiU+q4/2Lc9npb8tCaSX9FK7E8HnRr0Jz8D6OP9dO5Vg3Q9ct" crossorigin="anonymous"></script> 
+</body>
+
+</html>

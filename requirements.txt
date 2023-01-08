@@ -1,0 +1,9 @@
+six
+flask
+tensorflow==2.4.4
+keras
+opencv-python
+opencv-contrib-python
+mediapipe
+pymysql
+uwsgi

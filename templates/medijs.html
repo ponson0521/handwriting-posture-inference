@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>護聯網-相機介面</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css" integrity="sha384-xOolHFLEh07PJGoPkLv1IbcEPTNtaed2xpHsD9ESMhqIYd0nLMwNLD69Npy4HI+N" crossorigin="anonymous">
+  <link rel="shortcut icon" href="/static/image/favicon_io/favicon.ico" >
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@2.0.0/dist/tf.min.js"></script>
+  <style>
+    p {
+      font-size:20px; 
+      left:10px;
+      font-family: "Helvetica","Arial","LiHei Pro","黑體-繁","微軟正黑體",sans-serif;
+      display:inline-block;
+    }
+  </style>
+</head>
+
+<body>
+  <a href="/"><img src="/static/image/153636.jpg" class="img-fluid w-100" alt="Responsive image" style="height:200px;"></a>
+  <a href="/"><img src="/static/image/160019.jpg" class="mx-auto d-block" style="position:absolute; top:20px; left:20px; height:150px; width:350px;">  </a>
+
+  <nav class="navbar navbar-expand-md bg-warning navbar-light">
+    <!-- Brand -->
+    <a class="navbar-brand font-weight-bold" title="回首頁" href="/">
+      <!-- <img src="/static/image/favicon_io/favicon-32x32.png" width="32" height="32" class="d-inline-block align-top" alt=""> -->
+      <h2 class="font-weight-bolder">首頁</h2>
+    </a>
+    <!-- Toggler/collapsibe Button -->
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#collapsibleNavbar">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <!-- Navbar links -->
+    <div class="collapse navbar-collapse" id="collapsibleNavbar">
+      <div><hr></div>
+      <ul class="navbar-nav">
+        <li class="nav-item">
+          <a class="nav-link" href="/product"><h3 class="font-weight-bolder">商品</h3></a>
+        </li>
+        <div><hr></div>
+        <li class="nav-item">
+          <a class="nav-link" href="/upload"><h3 class="font-weight-bolder">上傳</h3></a>
+        </li>
+        <div><hr></div>
+        <li class="nav-item">
+          <a class="nav-link active" href="/medijs"><h3 class="font-weight-bolder">相機</h3></a>
+        </li>
+      </ul>
+    </div>
+  </nav>
+
+  <div id="target" class="container-fluid">
+    <video class="input_video" width="0px" height="0px" autoplay="true" playsinline></video>
+    <canvas class="output_canvas" width="480" height="480" style="position:absolute; left:0px; width:100%;"></canvas>
+  </div>
+
+  <script type="module">
+    // 擷取<video>與<canvas>兩個element,加載model與label
+    // const domain = document.domain;
+    const videoElement = document.getElementsByClassName('input_video')[0];
+    const canvasElement = document.getElementsByClassName('output_canvas')[0];
+    const canvasCtx = canvasElement.getContext('2d');
+    const model = await tf.loadGraphModel("/static/vec_60_1_js/model.json");
+    const model2 = await tf.loadGraphModel("/static/DNN_noral_1js/model.json")
+    console.log(model, model2);
+
+    // 對應預測結果的文本
+    const labels = ["拳握法", "旋前抓握", "靜態抓握", "動態抓握", "指側抓握"];
+    const text = [`<p>拳握 發展年齡1~2歲  再次點擊偵測</p><hr>
+    <p>這個階段的兒童橈尺側動作尚未分化，抓握物品或是握筆時，僅能做出手指全開或全合的動作，且前臂旋前動作發展尚未穩定，所以做出以手指捲握筆桿，虎口朝上揮動前臂塗鴉的動作。</p><hr>
+    {% if age %}
+      {% if age>=2 %}
+        <p>2歲以上：目前抓握動作低於孩子的年齡，如果這是他最常使用的握筆動作，建議尋求專業協助。如您目前使用的是優握筆，建議引導孩童抓握在握把後端加粗區域，利用優握筆支點靠近掌心的設計，讓孩童能以更省力的方式塗鴉。這個階段的孩童主要運筆動作發展趨勢是由“手臂驅動”－>“手腕驅動”，優渥筆的支點設計，更利於手腕動作出現，以達到促進握筆動作發展的效果。</p><hr>
+      {% else %}
+        <p>2歲以下：目前抓握動作符合孩子的年齡，建議可以使用優握筆的方式為，引導孩童抓握在握把後端加粗區域，利用優握筆支點靠近掌心的設計，讓孩童能以更省力的方式塗鴉。這個階段的孩童主要運筆動作發展趨勢是由“手臂驅動”－>“手腕驅動”，優渥筆的支點設計，更利於手腕動作出現，以達到促進抓握動作發展的效果。</p><hr>
+      {% endif %}
+    {% endif %}
+    `,
+    `<p>旋前抓握 發展年齡2~3歲  再次點擊偵測</p><hr>
+    <p>這個階段兒童橈尺側動作逐漸發展，逐漸以前三指的抓握取代全掌開合的動作，同時出現前臂旋前（虎口朝下）的動作。開始以虎口（橈側）接近紙張方式塗鴉，而後兩指將筆桿穩定於掌心。這階段的兒童需要逐步增進橈尺側的分離程度，與食指、拇指單獨的動作進而朝下個握筆階段發展。</p><hr>
+    {% if age %}
+      {% if age>=3 %}
+        <p>3歲以上：目前抓握動作低於孩子的年齡，如果這是他最常使用的握筆動作，建議持續觀注，或尋求專業協助。建議使用優握筆的方式為，抓握前端增加摩擦力的三角區域，利用防滑與增加觸覺回饋的特殊設計，減輕運筆時出力抓握的負擔，同時提供指尖更多的感覺回饋，提升運筆掌握度，同時促進前三指動作的發展。</p><hr>
+      {% else %}
+        <p>3歲以下：目前抓握動作符合孩子實際年齡，建議引導抓握前方三角區域，利用防滑與增加觸覺回饋的特殊設計，減輕運筆時出力抓握的負擔，同時提供指尖更多的感覺回饋，提升運筆掌握度，同時促進前三指動作的發展。後側增粗區域，利於穩定筆桿於掌心，促進橈尺側分離動作，讓食指、拇指動作更容易單獨出現，進而促進握筆動作發展。</p><hr>
+      {% endif %}
+    {% endif %}
+    `,
+    `<p>靜態抓握 發展年齡3~4歲  再次點擊偵測</p><hr>
+    <p>這個階段的兒童橈尺側動作發展漸趨穩定，可以出現如成熟握筆般，後兩指自然握拳，前三指執筆並將筆桿靠於虎口的動作。受限於掌內肌群獨立動作尚未發展成熟，特別是虎口周圍肌群無法維持支撐出活動空間，因而出現虎口夾住筆桿、食指拇指貼合筆桿的動作。這樣的動作造成運筆時手指可運動之空間受限，因而仍較依賴手腕運筆動作，長時間書寫或是練習較複雜的筆畫時容易顯疲累，且運筆的靈活度也不足。</p><hr>
+    {% if age %}
+      {% if age>=4 %}
+        <p>4歲以上：目前抓握動作低於孩子實際年齡，建議經由有阻力的掌內操作活動，訓練掌內肌群協調動作，增進虎口穩定，或尋求專業協助。優握筆針對靜態抓握階段的使用者，經由加粗的筆桿，支撐虎口的空間，減少運筆過程中虎口夾筆來穩定筆桿的動作。</p><hr>
+      {% else %}
+        <p>4歲以下：目前抓握動作符合孩子實際發展年齡，可持續提供力的掌內操作活動，訓練掌內肌群協調動作，增進虎口穩定，同時利用優握筆，針對靜態抓握階段的使用者，設計的加粗筆桿，支撐虎口的空間，減少運筆過程中虎口夾筆的動作。</p><hr>
+      {% endif %}
+    {% endif %}
+    `,
+    `<p>動態抓握  再次點擊偵測</p><hr>
+    <p>成熟的握筆動作，除優握筆提供更省力抓握的設計外，可以嘗試各種不同的筆進行書寫的練習。</p>
+    `,
+    `<p>指側抓握  再次點擊偵測</p><hr>
+    <p>成熟的握筆動作，可嘗試各種不同筆進行書寫練習，或使用優握筆的防滑增粗設計，避免過度捲握筆桿、過度出力穩定筆桿的動作出現，養成有效率的握筆動作習慣。可以特別留意書寫過程中，避免出現手腕向內彎的姿勢，因這樣的姿勢可能造成阻擋視野間接影響坐姿、手掌手指可活動空的空間受限制。</p>
+    `];
+
+    // 給<canvas>添加EventListener,點擊觸發,將<canvas>縮小隱藏,添加截圖的<img>與<p>文本,最後放上推薦商品的圖片連結
+    if (canvasElement) {
+      canvasElement.addEventListener('click', event =>{
+        const formData = new FormData();
+        formData.append("leftright", leftright);
+        formData.append("anwser", anwser);
+        canvasElement.toBlob(function(blob) {
+            formData.append("file", blob, makeid(6)+".png");
+            // Post via axios or other transport method
+            axios.post('/axios', formData);
+          });
+        let newImg = new Image();
+        newImg.src = canvasElement.toDataURL();
+        newImg.style = "left:0px; width:100%; display:inline-block";
+        let newP2 = document.createElement("p");
+        let newP = document.createElement("p");
+        if ((anwser in [0,1,2,3,4])) {newP.innerHTML = text[anwser];} else {newP.innerHTML = "未偵測到結果";}
+        let newA = document.createElement("a");
+        canvasElement.width = 0;
+        canvasElement.height = 0;
+        document.getElementById("target").appendChild(newImg);
+        document.getElementById("target").appendChild(newP);
+        if ((anwser in [0,1,2])) {
+          newP2.style = "color: blue;";  
+          newP2.innerHTML = "該發展階段推薦商品"
+          newA.href = "/product";
+          newA.innerHTML = `<img style="left:0px; display:inline-block;" src="/static/image/pen`+String(anwser)+`.jpg">`
+          document.getElementById("target").appendChild(newP2);
+          document.getElementById("target").appendChild(newA);
+        }
+        newImg.addEventListener('click', event =>{
+          canvasElement.width = 480;
+          canvasElement.height = 480;
+          newImg.remove();
+          newP.remove();
+          newP2.remove();
+          newA.remove();
+          anwser = 5;
+        })
+      }, false);
+    }
+    
+    function makeid(length) {
+    let newname = "";
+    const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    const charactersLength = characters.length;
+    for ( var i = 0; i < length; i++ ) {
+      newname += characters.charAt(Math.floor(Math.random() * charactersLength));
+    }
+    return newname;
+    }
+
+    // 模型預測,返回label名稱與左右手
+    var anwser;
+    var leftright;
+    function prediction(vector, vector2, handedness) {
+      let values = model.predict(vector);
+      let values2 = model2.predict(vector2);
+      anwser = values.add(values2).argMax(1).dataSync()[0];
+      if (handedness[0].index==0) {
+        leftright = "R";
+      }
+      else if (handedness[0].index==1) {
+        leftright = "L";
+      }
+      return labels[anwser]+"; "+leftright;
+    }
+
+    // 在<canvas>繪製mediapipe的結果
+    async function onResults(results) {
+      canvasCtx.save();
+      canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+      canvasCtx.drawImage(
+          results.image, 0, 0, canvasElement.width, canvasElement.height);
+      canvasCtx.font = "34px Arial";
+      canvasCtx.fillStyle = "#ff0000";
+      if (results.multiHandLandmarks) {
+        for (const landmarks of results.multiHandLandmarks) {
+          drawConnectors(canvasCtx, landmarks, HAND_CONNECTIONS,
+                         {color: '#00FF00', lineWidth: 5});
+          drawLandmarks(canvasCtx, landmarks, {color: '#FF0000', lineWidth: 2});
+        let vector = [
+          // landmarks[8].x-landmarks[4].x,landmarks[8].y-landmarks[4].y,landmarks[8].z-landmarks[4].z,
+          landmarks[1].x-landmarks[0].x,landmarks[1].y-landmarks[0].y,landmarks[1].z-landmarks[0].z,
+          landmarks[2].x-landmarks[1].x,landmarks[2].y-landmarks[1].y,landmarks[2].z-landmarks[1].z,
+          landmarks[3].x-landmarks[2].x,landmarks[3].y-landmarks[2].y,landmarks[3].z-landmarks[2].z,
+          landmarks[4].x-landmarks[3].x,landmarks[4].y-landmarks[3].y,landmarks[4].z-landmarks[3].z,
+          landmarks[5].x-landmarks[0].x,landmarks[5].y-landmarks[0].y,landmarks[5].z-landmarks[0].z,
+          landmarks[6].x-landmarks[5].x,landmarks[6].y-landmarks[5].y,landmarks[6].z-landmarks[5].z,
+          landmarks[7].x-landmarks[6].x,landmarks[7].y-landmarks[6].y,landmarks[7].z-landmarks[6].z,
+          landmarks[8].x-landmarks[7].x,landmarks[8].y-landmarks[7].y,landmarks[8].z-landmarks[7].z,
+          landmarks[9].x-landmarks[5].x,landmarks[9].y-landmarks[5].y,landmarks[9].z-landmarks[5].z,
+          landmarks[10].x-landmarks[9].x,landmarks[10].y-landmarks[9].y,landmarks[10].z-landmarks[9].z,
+          landmarks[11].x-landmarks[10].x,landmarks[11].y-landmarks[10].y,landmarks[11].z-landmarks[10].z,
+          landmarks[12].x-landmarks[11].x,landmarks[12].y-landmarks[11].y,landmarks[12].z-landmarks[11].z,
+          landmarks[13].x-landmarks[9].x,landmarks[13].y-landmarks[9].y,landmarks[13].z-landmarks[9].z,
+          landmarks[14].x-landmarks[13].x,landmarks[14].y-landmarks[13].y,landmarks[14].z-landmarks[13].z,
+          landmarks[15].x-landmarks[14].x,landmarks[15].y-landmarks[14].y,landmarks[15].z-landmarks[14].z,
+          landmarks[16].x-landmarks[15].x,landmarks[16].y-landmarks[15].y,landmarks[16].z-landmarks[15].z,
+          landmarks[17].x-landmarks[0].x,landmarks[17].y-landmarks[0].y,landmarks[17].z-landmarks[0].z,
+          landmarks[18].x-landmarks[17].x,landmarks[18].y-landmarks[17].y,landmarks[18].z-landmarks[17].z,
+          landmarks[19].x-landmarks[18].x,landmarks[19].y-landmarks[18].y,landmarks[19].z-landmarks[18].z,
+          landmarks[20].x-landmarks[19].x,landmarks[20].y-landmarks[19].y,landmarks[20].z-landmarks[19].z
+          // landmarks[0].x,landmarks[0].y,landmarks[0].z,landmarks[1].x,landmarks[1].y,landmarks[1].z,landmarks[2].x,
+          // landmarks[2].y,landmarks[2].z,landmarks[3].x,landmarks[3].y,landmarks[3].z,landmarks[4].x,landmarks[4].y,
+          // landmarks[4].z,landmarks[5].x,landmarks[5].y,landmarks[5].z,landmarks[6].x,landmarks[6].y,landmarks[6].z,
+          // landmarks[7].x,landmarks[7].y,landmarks[7].z,landmarks[8].x,landmarks[8].y,landmarks[8].z,landmarks[9].x,
+          // landmarks[9].y,landmarks[9].z,landmarks[10].x,landmarks[10].y,landmarks[10].z,landmarks[11].x,landmarks[11].y,
+          // landmarks[11].z,landmarks[12].x,landmarks[12].y,landmarks[12].z,landmarks[13].x,landmarks[13].y,landmarks[13].z,
+          // landmarks[14].x,landmarks[14].y,landmarks[14].z,landmarks[15].x,landmarks[15].y,landmarks[15].z,landmarks[16].x,
+          // landmarks[16].y,landmarks[16].z,landmarks[17].x,landmarks[17].y,landmarks[17].z,landmarks[19].x,landmarks[18].y,
+          // landmarks[18].z,landmarks[19].x,landmarks[19].y,landmarks[19].z,landmarks[20].x,landmarks[20].y,landmarks[20].z
+        ];
+        vector = tf.tensor1d(vector);
+        const handedness = results.multiHandedness;
+        const predresult = prediction(vector.reshape([-1, 60, 1]), vector.reshape([-1, 60]), handedness);
+        await canvasCtx.fillText(predresult+"  點擊得到結果", 10, 30);    // 預測後將結果寫在<canvas>畫布上
+        }
+      }
+      canvasCtx.restore();
+    }
+
+    // 加載mediapipe為hands,設定其參數,以供使用
+    const hands = new Hands({locateFile: (file) => {
+      return `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`;
+    }});
+    hands.setOptions({
+      maxNumHands: 1,
+      modelComplexity: 1,
+      minDetectionConfidence: 0.1,
+      minTrackingConfidence: 0.1
+    });
+    hands.onResults(onResults);
+    
+    // 使<video>獲取使用者設備存取權,得到攝影的影像,navigator.mediaDevices.getUserMedia(constraints)
+    const camera = new Camera(videoElement, {
+      onFrame: async () => {
+        await hands.send({image: videoElement});
+      },
+      facingMode: "environment",
+      width: 480,
+      height: 480
+    });
+    camera.start();
+    </script>
+
+    <!-- <script src="https://code.jquery.com/jquery-3.6.3.js" integrity="sha256-nQLuAZGRRcILA+6dMBOvcRh5Pe310sBpanc6+QBmyVM=" crossorigin="anonymous"></script> -->
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.slim.min.js" integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-Fy6S3B9q64WdZWQUiU+q4/2Lc9npb8tCaSX9FK7E8HnRr0Jz8D6OP9dO5Vg3Q9ct" crossorigin="anonymous"></script> 
+  </body>
+</html>
