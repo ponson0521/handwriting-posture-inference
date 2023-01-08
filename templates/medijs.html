@@ -61,7 +61,6 @@
 
   <script type="module">
     // 擷取<video>與<canvas>兩個element,加載model與label
-    // const domain = document.domain;
     const videoElement = document.getElementsByClassName('input_video')[0];
     const canvasElement = document.getElementsByClassName('output_canvas')[0];
     const canvasCtx = canvasElement.getContext('2d');
@@ -150,6 +149,7 @@
       }, false);
     }
     
+    // 隨機給上傳圖片取名
     function makeid(length) {
     let newname = "";
     const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
